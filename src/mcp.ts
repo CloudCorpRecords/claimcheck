@@ -21,7 +21,7 @@ import { detectClaims, strongClaims, claimStatus } from "./claims.js";
 import { classifyBranches, parkedBranches } from "./parked.js";
 import type { BranchSnapshot } from "./parked.js";
 
-const server = new McpServer({ name: "claimcheck", version: "0.1.0" });
+const server = new McpServer({ name: "claimcheck", version: "0.1.1" });
 
 const text = (obj: unknown) => ({
   content: [{ type: "text" as const, text: JSON.stringify(obj, null, 2) }],

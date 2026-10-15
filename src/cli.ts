@@ -206,6 +206,11 @@ async function main(): Promise<void> {
   const staleThresholdDays = daysFlag !== undefined ? Number(daysFlag) : 45;
 
   try {
+    if (command === "mcp") {
+      // Start the MCP server (stdio); the module connects on import.
+      await import("./mcp.js");
+      return;
+    }
     if (command === "claims" && target) return await cmdClaims(target, staleThresholdDays, asJson);
     if (command === "parked" && target) return await cmdParked(target, asJson);
     if (command === "issue" && target) return await cmdIssue(target, asJson);

@@ -10,9 +10,9 @@ claimcheck scans for both. It is the follow-up to [greenlight](https://github.co
 ## Install
 
 ```bash
-npm install -g claimcheck
+npm install -g @reneturcios/claimcheck
 # or
-npx claimcheck claims owner/repo
+npx @reneturcios/claimcheck claims owner/repo
 ```
 
 Needs Node 20+. Set `GITHUB_TOKEN` (or `GH_TOKEN`) for the 5000 req/hr authenticated rate limit; without it you get 60 req/hr. Responses are cached in `~/.cache/claimcheck`.
@@ -108,7 +108,7 @@ The same engines as tools, for agents that should check before they comment or c
 | `parked_branches` | `fork` (owner/repo) | Parked branches with compare data, plus all branches |
 | `issue_claim_status` | `url` (issue URL) | Claimants, age buckets, linked PRs, summary |
 
-Or run the server directly: `npx claimcheck mcp` (stdio).
+Or run the server directly: `npx @reneturcios/claimcheck mcp` (stdio).
 
 ## How detection works
 
@@ -133,3 +133,12 @@ Engines (`src/claims.ts`, `src/parked.ts`) are pure functions over fetched data,
 ## License
 
 MIT, Rene Turcios 2026.
+
+## The toolkit
+
+This tool is one of four in a lifecycle for open-source contribution work, all published under the `@reneturcios` npm scope and each available as a CLI and an MCP server (`<tool> mcp`):
+
+1. **gatefile** (`npx @reneturcios/gatefile`) extracts a repo's contribution gates into a committed `contribution-gates.json`.
+2. **greenlight** (`npx @reneturcios/greenlight`) pre-flights issues (GO / RISKY / TAKEN / GATED / STALE), consumes gatefile's output in `check` and `scan`, then claims, preps, and opens PRs.
+3. **claimcheck** (`npx @reneturcios/claimcheck`) watches for stale claims and fixes parked on forks.
+4. **prwatch** (`npx @reneturcios/prwatch`) triages your open PRs by what needs you right now.
