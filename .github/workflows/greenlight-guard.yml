@@ -1,0 +1,23 @@
+# Greenlight Guard: one comment on every pull request, updated on pushes.
+name: Greenlight Guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Guard the PR
+        uses: CloudCorpRecords/greenlight@v0.3.10
+        id: guard
+      - name: Fail the check when the guard flags something
+        if: steps.guard.outputs.findings != '0'
+        run: |
+          echo "::warning::greenlight guard flagged ${{ steps.guard.outputs.findings }} things; see the guard comment on this PR"
