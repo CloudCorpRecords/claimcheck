@@ -86,6 +86,22 @@ claimcheck issue https://github.com/modelcontextprotocol/python-sdk/issues/3287
 
 Every claimant found in the comments, their age bucket, and whether a linked PR exists.
 
+## Run it with Docker
+
+claimcheck also ships as a container image on GHCR: `ghcr.io/cloudcorprecords/claimcheck`.
+
+Use it as a stdio MCP server:
+
+```bash
+docker run -i ghcr.io/cloudcorprecords/claimcheck
+```
+
+Any CLI command can be passed after the image name instead of the default `mcp` argument:
+
+```bash
+docker run ghcr.io/cloudcorprecords/claimcheck <command> [args]
+```
+
 ## MCP server
 
 The same engines as tools, for agents that should check before they comment or code:
