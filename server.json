@@ -27,7 +27,6 @@
     {
       "registryType": "oci",
       "identifier": "ghcr.io/cloudcorprecords/claimcheck:0.1.1",
-      "version": "0.1.1",
       "runtimeHint": "docker",
       "runtimeArguments": [
         {
