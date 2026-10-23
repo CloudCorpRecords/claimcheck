@@ -8,7 +8,22 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 
-const API = "https://api.github.com";
+const DEFAULT_API = "https://api.github.com";
+
+/**
+ * The GitHub API base in use. CLAIMCHECK_GITHUB_BASE_URL wins, then the
+ * generic GITHUB_BASE_URL, then the public API. Lets the tool run through a
+ * vault-backed localhost proxy (gh-proxy) that attaches a stored token, the
+ * same pattern as Greenlight's GREENLIGHT_GITHUB_BASE_URL. Trailing slashes
+ * are stripped.
+ */
+export function githubApiBase(): string {
+  for (const raw of [process.env.CLAIMCHECK_GITHUB_BASE_URL, process.env.GITHUB_BASE_URL]) {
+    if (raw && raw.trim().length > 0) return raw.trim().replace(/\/+$/, "");
+  }
+  return DEFAULT_API;
+}
+
 const CACHE_DIR = join(homedir(), ".cache", "claimcheck");
 
 function ensureCache(): void {
@@ -20,6 +35,7 @@ const TTL_MS: Record<string, number> = {
   comments: 60 * 60 * 1000,
   prs: 60 * 60 * 1000,
   branches: 30 * 60 * 1000,
+  commit: 30 * 60 * 1000,
   compare: 30 * 60 * 1000,
   pulls: 30 * 60 * 1000,
   repo: 6 * 60 * 60 * 1000,
@@ -70,7 +86,7 @@ async function apiGet(path: string): Promise<unknown> {
   const token = githubToken();
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const res = await fetch(`${API}${path}`, { headers });
+  const res = await fetch(`${githubApiBase()}${path}`, { headers });
   if (res.status === 403 || res.status === 429) {
     const body = await res.text().catch(() => "");
     const reset = res.headers.get("x-ratelimit-reset");
@@ -272,19 +288,42 @@ export async function fetchRepo(owner: string, repo: string): Promise<RepoInfo> 
   return info;
 }
 
-/** List branches on a repo (excluding the default branch for parked-fix scans). */
+/** Fetch one commit's date (committer date, author date as fallback). */
+async function fetchCommitDate(owner: string, repo: string, sha: string): Promise<string> {
+  if (!sha) return "";
+  const cached = cacheGet("commit", [owner, repo, sha]) as string | undefined;
+  if (cached !== undefined) return cached;
+  let date = "";
+  try {
+    const data = (await apiGet(`/repos/${owner}/${repo}/commits/${sha}`)) as {
+      commit?: { committer?: { date?: string }; author?: { date?: string } };
+    };
+    date = String(data.commit?.committer?.date ?? data.commit?.author?.date ?? "");
+  } catch { /* date is best-effort; the branch itself still reports */ }
+  cacheSet("commit", [owner, repo, sha], date);
+  return date;
+}
+
+/**
+ * List branches on a repo (excluding the default branch for parked-fix scans).
+ * The branches API returns only the head commit's sha/url — no date — so the
+ * head commit is fetched per branch to populate lastCommitAt; without it the
+ * parked-age signal was permanently ""/0 (PT-2).
+ */
 export async function listBranches(owner: string, repo: string): Promise<BranchInfo[]> {
   const cached = cacheGet("branches", [owner, repo]) as BranchInfo[] | undefined;
   if (cached) return cached;
   const data = await paginate<Record<string, unknown>>(`/repos/${owner}/${repo}/branches`);
-  const branches: BranchInfo[] = data.map((b) => {
-    const inner = (b.commit as { sha: string; commit?: { committer?: { date?: string } } }) ?? {};
-    return {
+  const branches: BranchInfo[] = [];
+  for (const b of data) {
+    const inner = (b.commit as { sha?: string }) ?? {};
+    const sha = String(inner.sha ?? "");
+    branches.push({
       name: String(b.name),
-      sha: String(inner.sha ?? ""),
-      lastCommitAt: String(inner.commit?.committer?.date ?? ""),
-    };
-  });
+      sha,
+      lastCommitAt: await fetchCommitDate(owner, repo, sha),
+    });
+  }
   cacheSet("branches", [owner, repo], branches);
   return branches;
 }

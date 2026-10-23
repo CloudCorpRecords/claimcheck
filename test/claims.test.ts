@@ -75,6 +75,69 @@ describe("claim detection variants", () => {
   });
 });
 
+describe("first-person fix intent phrases (PT-3)", () => {
+  it("detects \"I'd like to fix this\" (the campaign's own phrasing)", () => {
+    const claims = detectClaims(
+      [comment("CloudCorpRecords", "I'd like to fix this. Plan: ensure path variables set in the Params tab are expanded when interpolating variables in the JSON request body, with a reproduction test.")],
+      { issueAuthor: "bruno-reporter", now: NOW }
+    );
+    assert.equal(claims.length, 1);
+    assert.equal(claims[0].strength, "strong");
+  });
+
+  it("detects \"I would like to fix this\"", () => {
+    const claims = detectClaims([comment("alice", "I would like to fix this if nobody else is on it.")], {
+      issueAuthor: "opener",
+      now: NOW,
+    });
+    assert.equal(claims.length, 1);
+    assert.equal(claims[0].strength, "strong");
+  });
+
+  it("detects \"I'd like to work on this\" (contraction of the explicit-claim pattern)", () => {
+    const claims = detectClaims([comment("alice", "I'd like to work on this one.")], {
+      issueAuthor: "opener",
+      now: NOW,
+    });
+    assert.equal(claims.length, 1);
+    assert.equal(claims[0].strength, "strong");
+  });
+
+  it("detects \"I'll fix this\" style first-person fix intent", () => {
+    const claims = detectClaims([comment("alice", "I'll fix this over the weekend.")], {
+      issueAuthor: "opener",
+      now: NOW,
+    });
+    assert.equal(claims.length, 1);
+    assert.equal(claims[0].strength, "strong");
+  });
+
+  it("does not flag wishes that someone else fix it", () => {
+    const claims = detectClaims(
+      [
+        comment("a", "I'd like to see this fixed, it blocks our release."),
+        comment("b", "I would like this fixed soon please."),
+        comment("c", "Can someone fix this? Happy to test a patch."),
+        comment("d", "I'd love to see a fix for this."),
+      ],
+      { issueAuthor: "opener", now: NOW }
+    );
+    assert.equal(strongClaims(claims).length, 0);
+  });
+
+  it("does not flag questions or discussion that merely mention fixing", () => {
+    const claims = detectClaims(
+      [
+        comment("a", "I would like to know whether this is planned before I fix my config."),
+        comment("b", "I'd like to understand the fix for this before upgrading."),
+        comment("c", "We discussed whether to fix this in the parser or the UI."),
+      ],
+      { issueAuthor: "opener", now: NOW }
+    );
+    assert.equal(strongClaims(claims).length, 0);
+  });
+});
+
 describe("author exclusions", () => {
   it("skips the issue author unless they announce real work", () => {
     const claims = detectClaims([comment("opener", "I would like to take this on")], {

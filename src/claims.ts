@@ -30,7 +30,14 @@ interface ClaimPattern {
 
 // Strong: explicit claim of work or a concrete "I am doing it" statement.
 const STRONG_PATTERNS: ClaimPattern[] = [
-  { name: "explicit-claim", regex: /i would like to (work on|take|handle) this/i, strength: "strong" },
+  { name: "want-to-work", regex: /i('d| would) like to (take|pick) (this|it) (on|up)/i, strength: "strong" },
+  { name: "explicit-claim", regex: /i( would|'d) like to (work on|take|handle) this/i, strength: "strong" },
+  // First-person fix intent: "I'd like to fix this", "I would like to fix
+  // this. Plan: …", "I'll fix this". Requires the speaker as the fixer —
+  // "I'd like to see this fixed" / "I would like this fixed" do not match
+  // because the fix verb does not directly follow the intent phrase.
+  { name: "like-to-fix", regex: /i( would|'d) like to (fix|resolve|address|tackle) (this|it)\b/i, strength: "strong" },
+  { name: "will-fix", regex: /i ?(will|'ll) (fix|resolve|address|tackle) (this|it)\b/i, strength: "strong" },
   { name: "please-assign", regex: /please assign (this|it|me)/i, strength: "strong" },
   { name: "assign-to-me", regex: /\bassign (it |this )?to me\b/i, strength: "strong" },
   { name: "assign-request", regex: /\bassign me\b/i, strength: "strong" },
@@ -42,7 +49,6 @@ const STRONG_PATTERNS: ClaimPattern[] = [
   { name: "fix-in-progress", regex: /\bfix is in progress\b/i, strength: "strong" },
   { name: "pr-incoming", regex: /\bpr (is |will be |to be )?(incoming|coming|ready|prepared)\b/i, strength: "strong" },
   { name: "started-work", regex: /\bi('ve| have) started (working )?on this/i, strength: "strong" },
-  { name: "want-to-work", regex: /i('d| would) like to (take|pick) (this|it) (on|up)/i, strength: "strong" },
 ];
 
 // Soft: interest or an offer, not a claim. Recorded for context, never a verdict.
