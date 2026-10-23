@@ -20,7 +20,27 @@ jobs:
       - name: PUT corrected server.json over the existing version
         run: |
           set -euo pipefail
-          TOKEN=$(python3 -c "import json,os; print(json.load(open(os.path.expanduser('~/.mcp_publisher_token')))['token'])")
+          echo "Files mcp-publisher may have written:"
+          find "$HOME" -maxdepth 4 \( -iname "*mcp*publisher*" -o -iname ".mcpregistry*" -o -iname "*registry*token*" \) 2>/dev/null | head -20
+          TOKEN=$(python3 - <<'PYEOF'
+          import glob, json, os
+          candidates = []
+          for pat in ["~/.mcp_publisher_token", "~/.config/mcp-publisher/*", "~/.mcpregistry_*", "~/.*token*"]:
+              candidates += glob.glob(os.path.expanduser(pat))
+          for path in candidates:
+              try:
+                  with open(path) as f:
+                      data = json.load(f)
+                  tok = data.get("token") or data.get("registry_token")
+                  if tok:
+                      print(tok)
+                      break
+              except Exception:
+                  continue
+          else:
+              raise SystemExit("registry token file not found in: " + ", ".join(candidates))
+          PYEOF
+          )
           NAME=$(python3 -c "import json,urllib.parse; print(urllib.parse.quote(json.load(open('server.json'))['name'], safe=''))")
           VER=$(python3 -c "import json; print(json.load(open('server.json'))['version'])")
           echo "Editing $NAME version $VER"
