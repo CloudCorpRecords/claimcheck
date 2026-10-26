@@ -15,7 +15,7 @@ npm install -g @reneturcios/claimcheck
 npx @reneturcios/claimcheck claims owner/repo
 ```
 
-Needs Node 20+. Set `GITHUB_TOKEN` (or `GH_TOKEN`) for the 5000 req/hr authenticated rate limit; without it you get 60 req/hr. Responses are cached in `~/.cache/claimcheck`.
+Needs Node 20+. Set `GITHUB_TOKEN` (or `GH_TOKEN`) for the 5000 req/hr authenticated rate limit; without it you get 60 req/hr. Responses are cached in `~/.cache/claimcheck` (override with `CLAIMCHECK_CACHE_DIR`, or the generic `CACHE_DIR`).
 
 ## CLI
 
@@ -140,7 +140,7 @@ A claim with any linked PR is WORK_IN_FLIGHT at any age: the claimant did the wo
 
 ```bash
 npm install
-npm test        # 23 offline tests, node:test via tsx
+npm test        # 40 offline tests, node:test via tsx
 npm run build   # tsc to dist/
 ```
 

@@ -1,6 +1,11 @@
 # Changelog
 
 
+## 0.1.4 (2026-10-25)
+
+Test cache isolation fix (PT-2). The GitHub response cache directory is no longer fixed at load time: a new `cacheDir()` resolver honors `CLAIMCHECK_CACHE_DIR`, then the generic `CACHE_DIR`, then the default `~/.cache/claimcheck`, and is read on every cache access. The PT-2 `listBranches` test now points the cache at a per-test temp directory, so it passes with a warm or poisoned real cache, in repeated runs, and cold; before this fix it passed cold and failed warm (34/35) because a fresh `branches-pt2-owner-pt2-repo.json` in the real cache was served without any fetch. New `cacheDir` tests plus a test asserting cache files land in the isolated directory. 40 tests passing.
+
+
 ## 0.1.3 (2026-10-23)
 
 Registry metadata correction release (repo health sweep). The MCP Registry's 0.1.2 listing was a phantom entry published 2026-10-18 whose package fields still pointed at the 0.1.1 npm package and the 0.1.1 GHCR image, and Registry versions are immutable, so the corrected listing ships as 0.1.3. No code changes from 0.1.2; server.json, package files, and the MCP server version string all move to 0.1.3 together. 35 tests passing.

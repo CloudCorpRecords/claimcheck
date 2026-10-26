@@ -2,7 +2,8 @@
  * GitHub API client. Native fetch only, no extra dependencies.
  * Optional GITHUB_TOKEN or GH_TOKEN env var raises the rate limit
  * from 60 to 5000 req/hr. Responses are cached under
- * ~/.cache/claimcheck so repeated scans do not burn quota.
+ * ~/.cache/claimcheck (override with CLAIMCHECK_CACHE_DIR or CACHE_DIR)
+ * so repeated scans do not burn quota.
  */
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -24,10 +25,22 @@ export function githubApiBase(): string {
   return DEFAULT_API;
 }
 
-const CACHE_DIR = join(homedir(), ".cache", "claimcheck");
+/**
+ * The cache directory in use. CLAIMCHECK_CACHE_DIR wins, then the generic
+ * CACHE_DIR, then ~/.cache/claimcheck. Read on every call, not once at load,
+ * so tests can point the cache at a temp directory per test and stay isolated
+ * from the real cache (and from each other), the same pattern as
+ * githubApiBase above.
+ */
+export function cacheDir(): string {
+  for (const raw of [process.env.CLAIMCHECK_CACHE_DIR, process.env.CACHE_DIR]) {
+    if (raw && raw.trim().length > 0) return raw.trim();
+  }
+  return join(homedir(), ".cache", "claimcheck");
+}
 
 function ensureCache(): void {
-  try { mkdirSync(CACHE_DIR, { recursive: true }); } catch { /* ignore */ }
+  try { mkdirSync(cacheDir(), { recursive: true }); } catch { /* ignore */ }
 }
 
 const TTL_MS: Record<string, number> = {
@@ -47,7 +60,7 @@ function cacheKey(kind: string, parts: string[]): string {
 
 function cacheGet(kind: string, parts: string[]): unknown | undefined {
   ensureCache();
-  const file = join(CACHE_DIR, cacheKey(kind, parts));
+  const file = join(cacheDir(), cacheKey(kind, parts));
   if (!existsSync(file)) return undefined;
   try {
     const entry = JSON.parse(readFileSync(file, "utf8"));
@@ -60,7 +73,7 @@ function cacheGet(kind: string, parts: string[]): unknown | undefined {
 
 function cacheSet(kind: string, parts: string[], data: unknown): void {
   ensureCache();
-  const file = join(CACHE_DIR, cacheKey(kind, parts));
+  const file = join(cacheDir(), cacheKey(kind, parts));
   try {
     writeFileSync(file, JSON.stringify({ savedAt: Date.now(), data }), "utf8");
   } catch { /* cache is best-effort */ }
